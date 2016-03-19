@@ -1,3 +1,5 @@
+pub mod rng;
+
 /// Simple example of a function that returns a string
 /// 
 /// # Example
