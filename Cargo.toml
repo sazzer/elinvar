@@ -1,0 +1,14 @@
+[package]
+name = "elinvar"
+version = "0.0.1"
+authors = [
+    "Graham Cox <graham@grahamcox.co.uk>"
+]
+
+[lib]
+name = "libelinvar"
+path = "src/lib.rs"
+
+[[bin]]
+name = "elinvar"
+path = "src/bin.rs"
