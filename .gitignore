@@ -1,3 +1,8 @@
 .vagrant/
 target/
+obj/
 Cargo.lock
+
+*.sln
+*.rsproj
+*.rsproj.user
