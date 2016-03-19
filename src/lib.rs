@@ -1,3 +1,11 @@
+/// Simple example of a function that returns a string
+/// 
+/// # Example
+/// 
+/// ```
+/// use libelinvar::hello;
+/// hello();
+/// ```
 pub fn hello() -> String {
     return "Elinvar".to_owned();
 }
