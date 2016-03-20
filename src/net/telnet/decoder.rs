@@ -24,7 +24,11 @@ enum TelnetDecoderState {
     /// We've just decoded a bare IAC
     Iac,
     // We're just about to negotiate an option state
-    Negotiation(Negotiation)
+    Negotiation(Negotiation),
+    // We're just about to receive the option ID for a subnegotiation
+    SubNegotiationOption,
+    // We're receiving the payload for a subnegotiation
+    SubNegotiationPayload(u8, Vec<u8>, bool)
 }
 
 /// Mechanism by which we can consume bytes that represent a Telnet byte stream and emit
@@ -63,7 +67,9 @@ impl TelnetDecoder {
         let result = match self.state {
             TelnetDecoderState::None => decode_from_none(b),
             TelnetDecoderState::Iac => decode_from_iac(b),
-            TelnetDecoderState::Negotiation(ref negotiation) => decode_from_negotiation(negotiation.clone(), b)
+            TelnetDecoderState::Negotiation(ref negotiation) => decode_from_negotiation(negotiation.clone(), b),
+            TelnetDecoderState::SubNegotiationOption => decode_from_subnegotiation(b),
+            TelnetDecoderState::SubNegotiationPayload(option, ref payload, iac) => decode_from_subnegotiation_payload(option, payload, iac, b)
         };
 
         self.state = result.new_state;
@@ -92,12 +98,40 @@ fn decode_from_iac(b: u8) -> DecoderResult {
         bytes::DONT => DecoderResult::new_state(TelnetDecoderState::Negotiation(Negotiation::Dont)),
         bytes::WILL => DecoderResult::new_state(TelnetDecoderState::Negotiation(Negotiation::Will)),
         bytes::WONT => DecoderResult::new_state(TelnetDecoderState::Negotiation(Negotiation::Wont)),
+        bytes::SB => DecoderResult::new_state(TelnetDecoderState::SubNegotiationOption),
         _ => DecoderResult::new_message(TelnetMessage::Byte(b))
     }
 }
 
 fn decode_from_negotiation(negotiation: Negotiation, option: u8) -> DecoderResult {
     DecoderResult::new_message(TelnetMessage::Negotiation(negotiation, option))
+}
+
+fn decode_from_subnegotiation(option: u8) -> DecoderResult {
+    DecoderResult::new_state(TelnetDecoderState::SubNegotiationPayload(option, vec!(), false))
+}
+
+fn decode_from_subnegotiation_payload(option: u8, payload: &Vec<u8>, iac: bool, b: u8) -> DecoderResult {
+    if iac {
+        match b {
+            bytes::SE => DecoderResult::new_message(TelnetMessage::SubNegotiation(option, payload.clone())),
+            _ => DecoderResult::new_state(TelnetDecoderState::SubNegotiationPayload(option, append_to_payload(payload, b), false))
+        }
+    } else {
+        match b {
+            bytes::IAC => DecoderResult::new_state(TelnetDecoderState::SubNegotiationPayload(option, payload.clone(), true)),
+            _ => DecoderResult::new_state(TelnetDecoderState::SubNegotiationPayload(option, append_to_payload(payload, b), false))
+        }
+    }
+}
+
+fn append_to_payload(payload: &Vec<u8>, next: u8) -> Vec<u8> {
+    let mut result = Vec::new();
+    for b in payload {
+        result.push(*b);
+    }
+    result.push(next);
+    result
 }
 
 #[cfg(test)]
