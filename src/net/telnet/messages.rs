@@ -1,4 +1,5 @@
 /// Enumeration of the different negotiations that can be performed for a Telnet Option
+#[derive(PartialEq, Debug, Clone)]
 pub enum Negotiation {
     Do,
     Dont,
@@ -7,6 +8,7 @@ pub enum Negotiation {
 }
 
 /// Enumeration of the different commands that can be represented as Telnet messages
+#[derive(PartialEq, Debug)]
 pub enum Command {
     DataMark,
     Break,
@@ -19,6 +21,7 @@ pub enum Command {
 }
 
 /// Enumeration of the different Telnet Messages that can be represented
+#[derive(PartialEq, Debug)]
 pub enum TelnetMessage {
     /// Telnet Message representing a single bare byte
     /// # Example
